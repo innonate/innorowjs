@@ -3,12 +3,33 @@
   <head>
     <title>innorow</title>
     <style>
+      .label {
+        font-size: 50px
+      }
+      .rowingData {
+        font-size: 100px
+      }
     </style>
   </head>
-  <body style="font-size: 20px">
-    RPM: <span id="rpm"></span></br>
-    Total Distance: <span id="distance"></span>M</br>
-    Acceleration/Decceleration: <span id="acceleration"></span></br>
+  <body>
+    <form>
+      <button><span id="stopWatchButton">Start</span></button>
+    </form></br>
+    Time Elapsed: <span id="timeElapsed"></span>
+    <hr>
+    <span class='label'>RPM:</span></br>
+    <span class='rowingData' id="rpm"></span>
+    <hr>
+    <span class='label'>Total Distance:</span></br>
+    <span class='rowingData' id="distance"></span>meters
+    <hr>
+    <span class='label'>Stroke Rate:</span></br>
+    <span class='rowingData' id="strokeRate"></span>
+    <hr>
+    <span class='label'>Status:</span><span class='label' id="acceleration"></span>
+    <hr>
+    <span class='label'>Status:</span><span class='label' id="acceleration"></span>
+    <hr>
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
@@ -21,6 +42,20 @@
       });
       socket.on('acceleration', function(msg){
         $('#acceleration').text(msg);
+      });
+      socket.on('stroke rate', function(msg){
+        $('#strokeRate').text(msg);
+      });
+      socket.on('stopwatch time', function(msg){
+        $('#timeElapsed').text(msg);
+        $('#stopWatchButton').text('Stop');
+      });
+      socket.on('stopwatch button value', function(msg){
+        $('#stopWatchButton').text(msg);
+      });
+      $('form').submit(function(){
+        socket.emit('start timer', true);
+        return false;
       });
     </script>
   </body>

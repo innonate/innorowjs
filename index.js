@@ -5,7 +5,21 @@ var io = require('socket.io')(http);
 // Setup for Calculations
 var cycles = [];
 var lastCycleTime;
-var lastCycleTimeDiff = 0;
+var lastCycleTimeDiff;
+var lastWasAccelerating;
+var strokes;
+var stopWatchOn;
+var startTime;
+var resetCalcValues = function(){
+  cycles = [];
+  lastCycleTime;
+  lastCycleTimeDiff = 0;
+  lastWasAccelerating = false;
+  strokes = [];
+  stopWatchOn = false;
+  startTime;
+}
+resetCalcValues();
 
 var hallGpio = 17;
 var ledGpio = 18;
@@ -25,19 +39,21 @@ hall.on('alert', function (level) {
     crpm = currentRpm(15)
     io.emit('rpm', crpm);
     io.emit('distance', currentDistance(cycles));
-    console.log(lastCycleTime);
     if (lastCycleTime == undefined) {
-      console.log('Its undefined');
       lastCycleTime = time;
-      acceleration = 'Accelerating'
+      accelerating = true
     } else {
       accelerating = ((time - lastCycleTime) > lastCycleTimeDiff) ? true : false
       lastCycleTimeDiff = time - lastCycleTime;
       lastCycleTime = time;
-      acceleration = accelerating ? 'Accelerating' : 'Decelerating'
     }
-    time - lastCycleTime
+    acceleration = accelerating ? 'Accelerating' : 'Decelerating'
+    if (accelerating && (accelerating != lastWasAccelerating)) {
+      strokes.push(time);
+    }
+    lastWasAccelerating = accelerating
     io.emit('acceleration', acceleration)
+    io.emit('stroke rate', strokeRate(15))
     if (crpm > 50) {
       led.digitalWrite(0);
     } else {
@@ -51,6 +67,9 @@ app.get('/', function(req, res){
 });
 
 io.on('connection', function(socket){
+  socket.on('start timer', function(msg){
+    startStopwatch();
+  });
 });
 
 http.listen(3000, function(){
@@ -75,13 +94,48 @@ var currentDistance = function(arry){
 }
 
 var fiveHundredSplit = function(){
-
+  rpms_per_fhun = Math.round(500.0 / wheelCircumference)
+  fhmago = cycles[rpms_per_fhun]
+  if (fhmago == undefined) {
+    return
+  } else {
+    date = new Date();
+    currentTime = date.getTime() / 1000.0;
+    return (fhmago - currentTime)/60 // minutes per 500m
+  }
 }
 
-var strokeRate = function(){
-  
+var strokeRate = function(sensitivity=60){
+  date = new Date();
+  currentTime = date.getTime() / 1000.0;
+  minuteAgo = currentTime - sensitivity
+  relevant = strokes.filter(function (entry) { return entry >= minuteAgo; });
+  return relevant.length * (60/sensitivity)
 }
 
-var totalTime = function(){
-
+var startStopwatch = function(){
+  if ((stopWatchOn == undefined) || (stopWatchOn == false)){
+    date = new Date();
+    startTime = date.getTime()/1000.0
+    stopWatchOn = true
+    io.emit('stopwatch button value', 'Stop');
+    setInterval(function(){
+      if (stopWatchOn) {
+        date = new Date();
+        currentTime = date.getTime()/1000.0
+        timeElapsed = Math.round(currentTime - startTime)
+        if (timeElapsed <= 60) {
+          clockValue = timeElapsed
+        } else {
+          minutes = Math.round(timeElapsed / 60)
+          seconds = timeElapsed % 60
+          clockValue = minutes + ':' + seconds
+        }
+        io.emit('stopwatch time', clockValue);
+      }
+    }, 100);
+  } else {
+    resetCalcValues();
+    io.emit('stopwatch button value', 'Restart');
+  }
 }
