@@ -4,6 +4,8 @@ var io = require('socket.io')(http);
 
 // Setup for Calculations
 var cycles = [];
+var lastCycleTime;
+var lastCycleTimeDiff = 0;
 
 var hallGpio = 17;
 var ledGpio = 18;
@@ -18,10 +20,29 @@ var Gpio = require('pigpio').Gpio,
 hall.on('alert', function (level) {
   if (level == 1) {
     date = new Date();
-    cycles.push(date.getTime()/1000.0);
-    io.emit('rpm', currentRpm(15));
+    time = date.getTime()/1000.0
+    cycles.push(time);
+    crpm = currentRpm(15)
+    io.emit('rpm', crpm);
     io.emit('distance', currentDistance(cycles));
-    led.digitalWrite(level);
+    console.log(lastCycleTime);
+    if (lastCycleTime == undefined) {
+      console.log('Its undefined');
+      lastCycleTime = time;
+      acceleration = 'Accelerating'
+    } else {
+      accelerating = ((time - lastCycleTime) > lastCycleTimeDiff) ? true : false
+      lastCycleTimeDiff = time - lastCycleTime;
+      lastCycleTime = time;
+      acceleration = accelerating ? 'Accelerating' : 'Decelerating'
+    }
+    time - lastCycleTime
+    io.emit('acceleration', acceleration)
+    if (crpm > 50) {
+      led.digitalWrite(0);
+    } else {
+      led.digitalWrite(1);
+    }
   }
 });
 
@@ -50,5 +71,17 @@ var currentRpm = function(sensitivity=60){
 }
 
 var currentDistance = function(arry){
-  return (wheelCircumference * arry.length);
+  return Math.round((wheelCircumference * arry.length));
+}
+
+var fiveHundredSplit = function(){
+
+}
+
+var strokeRate = function(){
+  
+}
+
+var totalTime = function(){
+
 }

@@ -7,7 +7,8 @@
   </head>
   <body style="font-size: 20px">
     RPM: <span id="rpm"></span></br>
-    Total Distance: <span id="distance"></span>M
+    Total Distance: <span id="distance"></span>M</br>
+    Acceleration/Decceleration: <span id="acceleration"></span></br>
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
@@ -17,6 +18,9 @@
       });
       socket.on('distance', function(msg){
         $('#distance').text(msg);
+      });
+      socket.on('acceleration', function(msg){
+        $('#acceleration').text(msg);
       });
     </script>
   </body>
