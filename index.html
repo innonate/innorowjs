@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <title>innorow</title>
+    <style>
+    </style>
+  </head>
+  <body style="font-size: 20px">
+    RPM: <span id="rpm"></span></br>
+    Total Distance: <span id="distance"></span>M
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var socket = io();
+      socket.on('rpm', function(msg){
+        $('#rpm').text(msg);
+      });
+      socket.on('distance', function(msg){
+        $('#distance').text(msg);
+      });
+    </script>
+  </body>
+</html>

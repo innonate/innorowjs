@@ -1,0 +1,21 @@
+{
+  "author": "Nate Westheimer <nate.westheimer@gmail.com>",
+  "name": "innorowjs",
+  "description": "Frontend for innorow",
+  "version": "0.0.0",
+  "repository": {
+    "url": ""
+  },
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.14.1",
+    "pi-gpio": "0.0.8",
+    "pigpio": "^0.4.0",
+    "socket.io": "^1.7.2"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
