@@ -9,27 +9,58 @@
       .rowingData {
         font-size: 100px
       }
+      .row {
+        width: 100%;
+      }
+      .cell {
+        width: 50%;
+        padding: 0px;
+        margin: 0px;
+        float: left;
+      }
+      button {
+        height: 50px;
+        width: 200px;
+        border-radius: 10px;
+        background-color: #228b22;
+        font-size: 40px;
+      }
     </style>
   </head>
   <body>
     <form>
       <button><span id="stopWatchButton">Start</span></button>
     </form></br>
-    Time Elapsed: <span id="timeElapsed"></span>
     <hr>
-    <span class='label'>RPM:</span></br>
-    <span class='rowingData' id="rpm"></span>
+    <div class="row">
+      <div class="cell">
+        <span class='label'>Time:</span></br>
+        <span class='rowingData' id="timeElapsed"></span>
+      </div>
+      <div class="cell">
+        <span class='label'>Distance:</span></br>
+        <span class='rowingData' id="distance"></span>&nbsp;<span class='rowingData'></span>
+      </div>
+    </div>
     <hr>
-    <span class='label'>Total Distance:</span></br>
-    <span class='rowingData' id="distance"></span>meters
-    <hr>
-    <span class='label'>Stroke Rate:</span></br>
-    <span class='rowingData' id="strokeRate"></span>
-    <hr>
-    <span class='label'>Status:</span><span class='label' id="acceleration"></span>
-    <hr>
-    <span class='label'>Status:</span><span class='label' id="acceleration"></span>
-    <hr>
+    <div class="row">
+      <div class="cell">
+        <span class='label'>Stroke Rate:</span></br>
+        <span class='rowingData' id="strokeRate"></span>
+      </div>
+      <div class="cell">
+        <span class='label'>Status:</span></br>
+        <span class='rowingData' id="acceleration"></span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="cell">
+        <span class='label'>RPM:</span></br>
+        <span class='rowingData' id="rpm"></span>
+      </div>
+      <div class="cell">
+      </div>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
@@ -51,6 +82,11 @@
         $('#stopWatchButton').text('Stop');
       });
       socket.on('stopwatch button value', function(msg){
+        if (msg == 'Stop') {
+          $('button').css("background-color", "red");
+        } else {
+          $('button').css("background-color", "#228b22");
+        }
         $('#stopWatchButton').text(msg);
       });
       $('form').submit(function(){

@@ -2,6 +2,7 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+
 // Setup for Calculations
 var cycles = [];
 var lastCycleTime;
@@ -38,7 +39,7 @@ hall.on('alert', function (level) {
     cycles.push(time);
     crpm = currentRpm(15)
     io.emit('rpm', crpm);
-    io.emit('distance', currentDistance(cycles));
+    io.emit('distance', (currentDistance(cycles) + 'M'));
     if (lastCycleTime == undefined) {
       lastCycleTime = time;
       accelerating = true
@@ -64,6 +65,11 @@ hall.on('alert', function (level) {
 
 app.get('/', function(req, res){
   res.sendfile('index.html');
+});
+
+app.get('/hr', function(req, res){
+  // sudo gatttool -b F5:17:6D:3E:AD:86 -I
+  res.body('F5:17:6D:3E:AD:86');
 });
 
 io.on('connection', function(socket){
@@ -129,13 +135,19 @@ var startStopwatch = function(){
         } else {
           minutes = Math.round(timeElapsed / 60)
           seconds = timeElapsed % 60
-          clockValue = minutes + ':' + seconds
+          clockValue = minutes + ':' + pad(seconds, 2)
         }
         io.emit('stopwatch time', clockValue);
       }
-    }, 100);
+    }, 20);
   } else {
     resetCalcValues();
     io.emit('stopwatch button value', 'Restart');
   }
+}
+
+function pad(num, size) {
+    var s = num+"";
+    while (s.length < size) s = "0" + s;
+    return s;
 }
