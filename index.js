@@ -1,10 +1,10 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-
+var BleHR = require('heartrate');
 
 // Setup for Calculations
-var cycles = [];
+var cycles;
 var lastCycleTime;
 var lastCycleTimeDiff;
 var lastWasAccelerating;
@@ -22,15 +22,26 @@ var resetCalcValues = function(){
 }
 resetCalcValues();
 
+// sudo gatttool -t random -b F5:17:6D:3E:AD:86 -I
+// primary
+var blueOpts = {
+  // "log": true,
+  "uuid": 'f5176d3ead86'
+}
+var stream = new BleHR(blueOpts);
+stream.on('data', function(data){
+  io.emit('heart rate', data.toString());
+});
+
 var hallGpio = 17;
 var ledGpio = 18;
 var Gpio = require('pigpio').Gpio,
-  hall = new Gpio(hallGpio, {
-    mode: Gpio.INPUT,
-    edge: Gpio.EITHER_EDGE,
-    alert: true
-  }),
-  led = new Gpio(ledGpio, {mode: Gpio.OUTPUT})
+hall = new Gpio(hallGpio, {
+  mode: Gpio.INPUT,
+  edge: Gpio.EITHER_EDGE,
+  alert: true
+}),
+led = new Gpio(ledGpio, {mode: Gpio.OUTPUT})
 
 hall.on('alert', function (level) {
   if (level == 1) {
@@ -50,10 +61,12 @@ hall.on('alert', function (level) {
     }
     acceleration = accelerating ? 'Accelerating' : 'Decelerating'
     if (accelerating && (accelerating != lastWasAccelerating)) {
+      io.emit('acceleration', 'New Stroke')
       strokes.push(time);
+    } else {
+      io.emit('acceleration', '---')
     }
     lastWasAccelerating = accelerating
-    io.emit('acceleration', acceleration)
     io.emit('stroke rate', strokeRate(15))
     if (crpm > 50) {
       led.digitalWrite(0);
@@ -67,11 +80,6 @@ app.get('/', function(req, res){
   res.sendfile('index.html');
 });
 
-app.get('/hr', function(req, res){
-  // sudo gatttool -b F5:17:6D:3E:AD:86 -I
-  res.body('F5:17:6D:3E:AD:86');
-});
-
 io.on('connection', function(socket){
   socket.on('start timer', function(msg){
     startStopwatch();
@@ -81,7 +89,6 @@ io.on('connection', function(socket){
 http.listen(3000, function(){
   console.log('listening on *:3000');
 });
-
 
 // # the wheel
 var wheelRadius = 0.34 // meters
