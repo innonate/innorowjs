@@ -38,19 +38,19 @@
         <span class='rowingData' id="timeElapsed"></span>
       </div>
       <div class="cell">
-        <span class='label'>Distance:</span></br>
-        <span class='rowingData' id="distance"></span>&nbsp;<span class='rowingData'></span>
+        <span class='label'>HR:</span></br></br>
+        <span class='rowingData' id="heartRate"></span>
       </div>
     </div>
     <hr>
     <div class="row">
       <div class="cell">
-        <span class='label'>Stroke Rate:</span></br>
-        <span class='rowingData' id="strokeRate"></span>
+        <span class='label'>Distance:</span></br>
+        <span class='rowingData' id="distance"></span>&nbsp;<span class='rowingData'></span>
       </div>
       <div class="cell">
-        <span class='label'>Status:</span></br>
-        <span class='rowingData' id="acceleration"></span>
+        <span class='label'>Stroke Rate:</span></br>
+        <span class='rowingData' id="strokeRate"></span>
       </div>
     </div>
     <div class="row">
@@ -59,6 +59,8 @@
         <span class='rowingData' id="rpm"></span>
       </div>
       <div class="cell">
+        <span class='label'>Status:</span></br>
+        <span class='rowingData' id="acceleration"></span>
       </div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
@@ -80,6 +82,9 @@
       socket.on('stopwatch time', function(msg){
         $('#timeElapsed').text(msg);
         $('#stopWatchButton').text('Stop');
+      });
+      socket.on('heart rate', function(msg){
+        $('#heartRate').text(msg);
       });
       socket.on('stopwatch button value', function(msg){
         if (msg == 'Stop') {
