@@ -56,6 +56,14 @@
         <span class='rowingData' id="strokeRate"></span>
       </div>
     </div>
+    <hr>
+    <div class="row">
+      <div class="cell">
+        <span class='label'>Calories:</span></br>
+        <span class='rowingData' id="calories"></span>
+      </div>
+    </div>
+    <hr>
     <div class="row">
       <div class="cell">
         <span class='label'>RPM:</span></br>
@@ -91,6 +99,9 @@
       });
       socket.on('heart rate label', function(msg){
         $('#heartRateLabel').text(msg);
+      });
+      socket.on('calories', function(msg){
+        $('#calories').text(msg);
       });
       socket.on('stopwatch button value', function(msg){
         if (msg == 'Stop') {
