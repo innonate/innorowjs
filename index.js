@@ -1,4 +1,5 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var querystring = require('querystring');
@@ -11,9 +12,15 @@ var BleHR = require('heartrate');
 var passport = require('passport');
 var RunKeeperStrategy = require('passport-runkeeper').Strategy;
 
-
+// use cookies
 app.use(cookieParser());
 
+// prepare server
+app.use('/js', express.static(__dirname + '/node_modules/bootstrap/dist/js')); // redirect bootstrap JS
+app.use('/js', express.static(__dirname + '/node_modules/jquery/dist')); // redirect JS jQuery
+app.use('/css', express.static(__dirname + '/node_modules/bootstrap/dist/css')); // redirect CSS bootstrap
+
+// setup Runkeeper
 var runkeeperAccessToken;
 passport.use(new RunKeeperStrategy({
     clientID: process.env.RUNKEEPER_CLIENT_ID,
@@ -21,12 +28,15 @@ passport.use(new RunKeeperStrategy({
     callbackURL: "http://192.168.0.92:3000/auth/runkeeper/callback"
   },
   function(accessToken, refreshToken, profile, done) {
-    console.log('in the call back')
     runkeeperAccessToken = accessToken;
     return done(null, null);
   }
 ));
 
+// Setup for Health Data
+var myAge = 33;
+var myWeight = 90; // in kg
+var myRestingHr = 58; // bpm
 
 // Setup for Calculations
 var heartrate;
@@ -51,15 +61,14 @@ var resetCalcValues = function(){
 }
 resetCalcValues();
 
-// sudo gatttool -t random -b F5:17:6D:3E:AD:86 -I
-// primary
-
 var updateHr = function(hr){
   date = new Date();
   time = date.getTime()
   heartrate.unshift([parseInt(hr), time]);
   io.emit('heart rate label', 'HR');
   io.emit('heart rate', hr);
+  heatrateZone = fatBurningZone(parseInt(hr));
+  io.emit('heart rate zone', heatrateZone);
   if (heartrate.length % 10 == 0){
     lastTen = heartrate.slice(0,9)
     var sum = 0;
@@ -74,15 +83,52 @@ var updateHr = function(hr){
 }
 
 var avgHeartRate = function(){
-  var sum = 0;
-  for( var i = 0; i < heartrate.length; i++ ){
-      sum += parseInt( heartrate[i][0], 10 ); //don't forget to add the base
+  if (!startTime) {
+    relevantHr = heartrate;  
+  } else {
+    relevantHr = heartrate.filter(function (entry) { return entry[1] >= startTime });  
   }
-  var avg = Math.round(sum/heartrate.length);
+  var sum = 0;
+  for( var i = 0; i < relevantHr.length; i++ ){
+      sum += parseInt( relevantHr[i][0], 10 ); //don't forget to add the base
+  }
+  var avg = Math.round(sum/relevantHr.length);
   return avg;
 }
 
+var fatBurningZone = function(hr){
+  // http://www.active.com/fitness/articles/how-to-calculate-your-training-heart-rate-zones
+  // warmup is anything lower
+  fatBurningLo = calculateRange(0.5);
+  fatBurningHi = calculateRange(0.75);
+  aerobicLo = calculateRange(0.75);
+  aerobicHi = calculateRange(0.85);
+  thresholdLo = calculateRange(0.85);
+  thresholdHi = calculateRange(0.90);
+
+  // anaerobic is anything above
+  if (hr < fatBurningLo){
+    return 'WARMUP';
+  } else if ((hr >= fatBurningLo) && (hr < fatBurningHi)) {
+    return 'FAT_BURNING'
+  } else if ((hr >= aerobicLo) && (hr < aerobicHi)) {
+    return 'AEROBIC'
+  } else if ((hr >= thresholdLo) && (hr < thresholdHi)) {
+    return 'THRESHOLD'
+  } else {
+    return 'ANAEROBIC'
+  }
+}
+
+var calculateRange = function(hrRange){
+  maxHr = 220 - myAge;
+  hrReserve = maxHr - myRestingHr
+  theRange = (myRestingHr + (hrReserve*hrRange));
+  return theRange;
+}
+
 var totalCalories = function(){
+  // Using this formula: http://www.rowingmachineking.com/calories-burned-on-rowing-machine/
   // Male: ((-55.0969 + (0.6309 x HR) + (0.1988 x W) + (0.2017 x A))/4.184) x 60 x T
   // Female: ((-20.4022 + (0.4472 x HR) - (0.1263 x W) + (0.074 x A))/4.184) x 60 x T
   // where
@@ -91,26 +137,31 @@ var totalCalories = function(){
   // A = Age (in years)
   // T = Exercise duration time (in hours)
   HR = avgHeartRate();
-  W = 90
-  A = 34
-  T = (timeElapsed/(60.0*60.0));
+  W = myWeight 
+  A = myAge
+  T = (timeElapsed/(60.0*60.0)); // time divided by hours
   return Math.round(((-55.0969 + (0.6309 * HR) + (0.1988 * W) + (0.2017 * A))/4.184) * 60 * T)
+}
+
+var listenToHr = function(uuid){
+  var blueOpts = {
+    // "log": true,
+    "uuid": uuid
+  }
+  var stream = new BleHR(blueOpts);
+  stream.on('data', function(data){
+    hr = data.toString();
+    updateHr(hr);
+  });
 }
 
 var hrMonitorUuid;
 BleHR.list().on('data', function (device) {
-  if (hrMonitorUuid == undefined && device.advertisement && /HRM/.exec(device.advertisement.localName)) {
+  if (!hrMonitorUuid && device.advertisement && /HRM/.exec(device.advertisement.localName)) {
     console.log("Found HRM: " + device.advertisement.localName)
     hrMonitorUuid = device.uuid;
-    var blueOpts = {
-      // "log": true,
-      "uuid": hrMonitorUuid
-    }
-    var stream = new BleHR(blueOpts);
-    stream.on('data', function(data){
-      hr = data.toString();
-      updateHr(hr);
-    });
+    listenToHr(hrMonitorUuid);
+    return;
   }
 });
 
@@ -131,7 +182,7 @@ hall.on('alert', function (level) {
     cycles.unshift(time);
     crpm = currentRpm(15)
     io.emit('rpm', crpm);
-    io.emit('distance', (currentDistance(cycles) + 'M'));
+    io.emit('distance', currentDistance(cycles));
     if (lastCycleTime == undefined) {
       lastCycleTime = time;
       accelerating = true
@@ -176,8 +227,13 @@ app.get('/auth/runkeeper/callback', passport.authenticate('runkeeper', {failureR
 
 io.on('connection', function(socket){
   socket.on('start timer', function(msg){
-    resetCalcValues();
-    startStopwatch();
+    if (msg == 'PAUSE'){
+      pauseStopwatch()
+    } else if (msg == 'CLEAR') {
+      clearStopwatch();
+    } else {
+      startStopwatch();
+    }
   });
   socket.on('save data', function(msg){
     postWorkoutToRunkeeper();
@@ -230,7 +286,7 @@ var startStopwatch = function(){
     startTime = date.getTime()
     stopWatchOn = true
     io.emit('stopwatch button value', 'Stop');
-    setInterval(function(){
+    var theStopWatch = setInterval(function(){
       if (stopWatchOn) {
         date = new Date();
         currentTime = date.getTime()/1000.0
@@ -243,12 +299,23 @@ var startStopwatch = function(){
           clockValue = minutes + ':' + pad(seconds, 2)
         }
         io.emit('stopwatch time', clockValue);
+      } else {
+        clearInterval(theStopWatch);
       }
-    }, 20);
+    }, 50);
   } else {
-    resetCalcValues();
-    io.emit('stopwatch button value', 'Restart');
+    clearStopwatch();
   }
+}
+
+var pauseStopwatch = function(){
+  stopWatchOn = false
+  io.emit('stopwatch button value', 'Clear Data');
+}
+
+var clearStopwatch = function(){
+  resetCalcValues();
+  io.emit('stopwatch button value', 'Start');
 }
 
 function pad(num, size) {
@@ -257,27 +324,14 @@ function pad(num, size) {
     return s;
 }
 
-// POST /fitnessActivities HTTP/1.1
-// Host: api.runkeeper.com
-// Authorization: Bearer xxxxxxxxxxxxxxxx
-// Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json
-// Content-Length: nnn
-// RUNKEEPER_CLIENT_ID
-// RUNKEEPER_CLIENT_SECRET
-
 function postWorkoutToRunkeeper(){
-  // An object of options to indicate where to post to
-  // var post_options = {
-  //     host: 'api.runkeeper.com',
-  //     port: '80',
-  //     path: '/fitnessActivities',
-  //     method: 'POST',
-  //     headers: {
-  //         'Authorization': ('Bearer ' + runkeeperAccessToken),
-  //         'Content-Type': 'application/vnd.com.runkeeper.NewFitnessActivity+json',
-  //         'Content-Length': Buffer.byteLength(post_data)
-  //     }
-  // };
+  // POST /fitnessActivities HTTP/1.1
+  // Host: api.runkeeper.com
+  // Authorization: Bearer xxxxxxxxxxxxxxxx
+  // Content-Type: application/vnd.com.runkeeper.NewFitnessActivity+json
+  // Content-Length: nnn
+  // RUNKEEPER_CLIENT_ID
+  // RUNKEEPER_CLIENT_SECRET
   var post_options = {
     uri: '/fitnessActivities',
     baseUrl: 'http://api.runkeeper.com',
@@ -316,24 +370,25 @@ function formatForRunkeeper(){
     "average_heart_rate": avgHeartRate(),
     "heart_rate": [],
     "distance": [],
-    "post_to_facebook": false,
+    "post_to_facebook": true,
     "post_to_twitter": false
   }
   sDate = new Date();
   sDate.setTime(startTime);
   startDate = dateFormat(sDate, "ddd, d mmm yyyy HH:MM:ss");
-  console.log(startDate)
   basehash['start_time'] = startDate;
-  for( var i = 0; i < heartrate.length; i++ ){
+  relevantHr = heartrate.filter(function (entry) { return entry[1] >= sDate });
+  for( var i = 0; i < relevantHr.length; i++ ){
     hr = {
-      'timestamp': (heartrate[i][1] - startTime),
-      'heart_rate': heartrate[i][0]
+      'timestamp': ((relevantHr[i][1] - startTime)/1000.0),
+      'heart_rate': relevantHr[i][0]
     }
     basehash['heart_rate'].unshift(hr)
   }
-  for( var i = 0; i < cycles.length; i++ ){
+  relevantCyles = cycles.filter(function (entry) { return entry >= sDate/1000.00; });
+  for( var i = 0; i < relevantCyles.length; i++ ){
     dist = {
-      'timestamp': (cycles[i] - (startTime/1000.0)),
+      'timestamp': (relevantCyles[i] - (startTime/1000.0)),
       'distance': ((i+1)*wheelCircumference)
     }
     basehash['distance'].unshift(dist)

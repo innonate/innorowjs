@@ -2,6 +2,8 @@
 <html>
   <head>
     <title>innorow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
     <style>
       .label {
         font-size: 50px
@@ -9,73 +11,62 @@
       .rowingData {
         font-size: 100px
       }
-      .row {
-        width: 100%;
-      }
-      .cell {
-        width: 50%;
-        padding: 0px;
-        margin: 0px;
-        float: left;
-      }
-      button {
-        height: 50px;
-        width: 200px;
-        border-radius: 10px;
-        background-color: #228b22;
-        font-size: 40px;
-      }
     </style>
   </head>
   <body>
-    <form id='stopWatchForm'>
-      <button><span id="stopWatchButton">Start</span></button>
-    </form></br>
-    <form id='saveDataForm'>
-      <button><span id="saveDataButton">Save Data</span></button>
-    </form></br>
-    <hr>
-    <div class="row">
-      <div class="cell">
-        <span class='label'>Time:</span></br>
-        <span class='rowingData' id="timeElapsed"></span>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-xs-6">
+          <form id='stopWatchForm'>
+            <button class="btn btn-lg btn-success"><span id="stopWatchButton">Start</span></button>
+          </form>
+        </div>
+        <div class="col-xs-6">
+          <form id='saveDataForm'>
+            <button class="btn btn-lg btn-info"><span id="saveDataButton">Save Data</span></button>
+          </form>
+        </div>
       </div>
-      <div class="cell">
-        <span class='label' id="heartRateLabel">HR:</span></br></br>
-        <span class='rowingData' id="heartRate"></span>
+      <hr>
+      <div class="row">
+        <div class="col-xs-6">
+          <h1><span class='rowingData' id="timeElapsed">00:00</span><br/><small>Time</small></h1>
+        </div>
+        <div class="col-xs-6" id="heartRateZone">
+          <h1><span class='rowingData' id="heartRate">--</span><br/><small><span id="heartRateLabel">HR</span></small></h1>
+        </div>
       </div>
-    </div>
-    <hr>
-    <div class="row">
-      <div class="cell">
-        <span class='label'>Distance:</span></br>
-        <span class='rowingData' id="distance"></span>&nbsp;<span class='rowingData'></span>
+      <hr>
+      <div class="row">
+        <div class="col-xs-6">
+          <h1><span class='rowingData' id="distance">0</span><small>M</small><br/><small>Distance</small></h1>
+        </div>
+        <div class="col-xs-6">
+          <h1><span class='rowingData' id="strokeRate">0</span><small>spm</small><br/><small>Stroke Rate</small></h1>
+        </div>
       </div>
-      <div class="cell">
-        <span class='label'>Stroke Rate:</span></br>
-        <span class='rowingData' id="strokeRate"></span>
+      <hr>
+      <div class="row">
+        <div class="col-xs-6">
+          <h1><span class='rowingData' id="calories">0</span><br/><small>Calories</small></h1>
+        </div>
+        <div class="col-xs-6">
+          <!-- <h1><span class='rowingData' id="calories">0</span><br/><small>Calories</small></h1> -->
+        </div>
       </div>
-    </div>
-    <hr>
-    <div class="row">
-      <div class="cell">
-        <span class='label'>Calories:</span></br>
-        <span class='rowingData' id="calories"></span>
-      </div>
-    </div>
-    <hr>
-    <div class="row">
-      <div class="cell">
-        <span class='label'>RPM:</span></br>
-        <span class='rowingData' id="rpm"></span>
-      </div>
-      <div class="cell">
-        <span class='label'>Status:</span></br>
-        <span class='rowingData' id="acceleration"></span>
+      <hr>
+      <div class="row">
+        <div class="col-xs-6">
+          <h1><span class='rowingData' id="rpm">0</span><br/><small>RPM</small></h1>
+        </div>
+        <div class="col-xs-6">
+          <h1><span class='rowingData' id="acceleration">0</span><br/><small>Stroke</small></h1>
+        </div>
       </div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
     <script>
       var socket = io();
       socket.on('rpm', function(msg){
@@ -100,20 +91,44 @@
       socket.on('heart rate label', function(msg){
         $('#heartRateLabel').text(msg);
       });
+      socket.on('heart rate zone', function(msg){
+        if (msg == 'WARMUP') {
+          bgColor = 'white'
+        } else if (msg == 'FAT_BURNING') {
+          bgColor = '#5cb85c'
+        } else if (msg == 'THRESHOLD') {
+          bgColor = '#f0ad4e'
+        } else if (msg == 'ANAEROBIC') {
+          bgColor = '#d9534f'
+        } else {
+          bgColor = 'purple'
+        }
+        $('#heartRateZone').css("background-color", bgColor);
+      });
       socket.on('calories', function(msg){
         $('#calories').text(msg);
       });
       socket.on('stopwatch button value', function(msg){
         if (msg == 'Stop') {
-          $('button').css("background-color", "red");
+          $('#stopWatchForm').find('button').addClass('btn-danger').removeClass('btn-success');
+        } else if (msg == 'Clear Data'){
+          $('#stopWatchForm').find('button').addClass('btn-warning').removeClass('btn-danger');
         } else {
-          $('button').css("background-color", "#228b22");
+          $('#stopWatchForm').find('button').addClass('btn-success').removeClass('btn-warning');
         }
         $('#stopWatchButton').text(msg);
       });
       $('#stopWatchForm').submit(function(){
-        socket.emit('start timer', true);
-        return false;
+        buttonText = $('#stopWatchForm').find('button')[0].innerText
+        if (buttonText == 'Start'){
+          sendValue = 'START';
+        } else if (buttonText == 'Clear Data'){
+          sendValue = 'CLEAR';
+        } else {
+          sendValue = 'PAUSE';
+        }
+        socket.emit('start timer', sendValue);
+          return false;
       });
       $('#saveDataForm').submit(function(){
         socket.emit('save data', true);
