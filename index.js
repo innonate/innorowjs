@@ -4,6 +4,7 @@ var io = require('socket.io')(http);
 var BleHR = require('heartrate');
 
 // Setup for Calculations
+var heartrate;
 var cycles;
 var lastCycleTime;
 var lastCycleTimeDiff;
@@ -12,6 +13,7 @@ var strokes;
 var stopWatchOn;
 var startTime;
 var resetCalcValues = function(){
+  heartrate = [];
   cycles = [];
   lastCycleTime;
   lastCycleTimeDiff = 0;
@@ -24,13 +26,40 @@ resetCalcValues();
 
 // sudo gatttool -t random -b F5:17:6D:3E:AD:86 -I
 // primary
-var blueOpts = {
-  // "log": true,
-  "uuid": 'f5176d3ead86'
+
+var updateHr = function(hr){
+  date = new Date();
+  time = date.getTime()/1000.0
+  heartrate.unshift(parseInt([hr, time]));
+  io.emit('heart rate label', 'HR');
+  io.emit('heart rate', hr);
+  if (heartrate.length % 10 == 0){
+    lastTen = heartrate.slice(0,9)
+    var sum = 0;
+    for( var i = 0; i < lastTen.length; i++ ){
+        sum += parseInt( lastTen[i][0], 10 ); //don't forget to add the base
+    }
+    var avg = Math.round(sum/lastTen.length);
+    io.emit('heart rate label', 'Avg HR');
+    io.emit('heart rate', avg);
+  }
 }
-var stream = new BleHR(blueOpts);
-stream.on('data', function(data){
-  io.emit('heart rate', data.toString());
+
+var hrMonitorUuid;
+BleHR.list().on('data', function (device) {
+  if (hrMonitorUuid == undefined && device.advertisement && /HRM/.exec(device.advertisement.localName)) {
+    console.log("Found HRM: " + device.advertisement.localName)
+    hrMonitorUuid = device.uuid;
+    var blueOpts = {
+      // "log": true,
+      "uuid": hrMonitorUuid
+    }
+    var stream = new BleHR(blueOpts);
+    stream.on('data', function(data){
+      hr = data.toString();
+      updateHr(hr);
+    });
+  }
 });
 
 var hallGpio = 17;
@@ -47,7 +76,7 @@ hall.on('alert', function (level) {
   if (level == 1) {
     date = new Date();
     time = date.getTime()/1000.0
-    cycles.push(time);
+    cycles.unshift(time);
     crpm = currentRpm(15)
     io.emit('rpm', crpm);
     io.emit('distance', (currentDistance(cycles) + 'M'));
@@ -62,7 +91,7 @@ hall.on('alert', function (level) {
     acceleration = accelerating ? 'Accelerating' : 'Decelerating'
     if (accelerating && (accelerating != lastWasAccelerating)) {
       io.emit('acceleration', 'New Stroke')
-      strokes.push(time);
+      strokes.unshift(time);
     } else {
       io.emit('acceleration', '---')
     }
@@ -82,8 +111,12 @@ app.get('/', function(req, res){
 
 io.on('connection', function(socket){
   socket.on('start timer', function(msg){
+    resetCalcValues();
     startStopwatch();
   });
+  socket.on('save data', function(msg){
+
+  }
 });
 
 http.listen(3000, function(){

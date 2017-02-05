@@ -28,8 +28,11 @@
     </style>
   </head>
   <body>
-    <form>
+    <form id='stopWatchForm'>
       <button><span id="stopWatchButton">Start</span></button>
+    </form></br>
+    <form id='saveDataForm'>
+      <button><span id="saveDataButton">Save Data</span></button>
     </form></br>
     <hr>
     <div class="row">
@@ -38,7 +41,7 @@
         <span class='rowingData' id="timeElapsed"></span>
       </div>
       <div class="cell">
-        <span class='label'>HR:</span></br></br>
+        <span class='label' id="heartRateLabel">HR:</span></br></br>
         <span class='rowingData' id="heartRate"></span>
       </div>
     </div>
@@ -86,6 +89,9 @@
       socket.on('heart rate', function(msg){
         $('#heartRate').text(msg);
       });
+      socket.on('heart rate label', function(msg){
+        $('#heartRateLabel').text(msg);
+      });
       socket.on('stopwatch button value', function(msg){
         if (msg == 'Stop') {
           $('button').css("background-color", "red");
@@ -94,8 +100,12 @@
         }
         $('#stopWatchButton').text(msg);
       });
-      $('form').submit(function(){
+      $('#stopWatchForm').submit(function(){
         socket.emit('start timer', true);
+        return false;
+      });
+      $('#saveDataForm').submit(function(){
+        socket.emit('save data', true);
         return false;
       });
     </script>
