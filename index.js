@@ -69,7 +69,7 @@ var updateHr = function(hr){
     var avg = Math.round(sum/lastTen.length);
     io.emit('heart rate label', 'Avg HR');
     io.emit('heart rate', avg);
-    io.emit('calories', totalCalories())
+    io.emit('calories', totalCalories());
   }
 }
 
@@ -93,8 +93,8 @@ var totalCalories = function(){
   HR = avgHeartRate();
   W = 90
   A = 34
-  T = timeElapsed/60.0
-  return (((-55.0969 + (0.6309 * HR) + (0.1988 * W) + (0.2017 * A))/4.184) * 60 * T)
+  T = (timeElapsed/(60.0*60.0));
+  return Math.round(((-55.0969 + (0.6309 * HR) + (0.1988 * W) + (0.2017 * A))/4.184) * 60 * T)
 }
 
 var hrMonitorUuid;
@@ -291,8 +291,10 @@ function postWorkoutToRunkeeper(){
   }
   request(post_options,function (error, response, body) {
     console.log('statusCode: '+ response.statusCode);
-    console.log(error)
-    console.log(body)
+    if (error) {
+      console.log(error)
+      console.log(body)
+    }
   });
 }
 

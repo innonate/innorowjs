@@ -17,3 +17,6 @@ innorow uses a Hall Effect Sensor, Wahoo HR Monitor, Raspberry Pi, Node JS, and 
 ## Common issues
 - If you're not sure how to get your UUID for your HR monitor, use the `BleHR.list.print()` method mentioned by the [Heartrate node module](https://github.com/mikaelbr/node-heartrate).
 - If your HR monitor does not report on battery level (as was the issue with mine) you will need to comment out [Line 111](https://github.com/mikaelbr/node-heartrate/blob/master/lib/device.js#L111) of the HR module.
+
+## Running innorowjs
+After you've installed all the modules (`npm install`) and you can run innorow using `sudo -E node index.js`. Note: You must use `sudo` to have access to the Pi's GPIO and you must use `-E` so you can use your Runkeeper environment variables.
