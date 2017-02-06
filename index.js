@@ -180,10 +180,11 @@ hall.on('alert', function (level) {
     if (stopWatchState == 'ON' || stopWatchState == 'NOT_STARTED'){
       // Record the cycle if you haven't started or if you're working out.
       cycles.unshift(time);
+      crpm = currentRpm(15)
+      io.emit('rpm', crpm);
+      io.emit('distance', currentDistance());
+      io.emit('five hundred split', fiveHundredSplit(10));
     }
-    crpm = currentRpm(15)
-    io.emit('rpm', crpm);
-    io.emit('distance', currentDistance());
     if (lastCycleTime == undefined) {
       lastCycleTime = time;
       accelerating = true
@@ -197,7 +198,7 @@ hall.on('alert', function (level) {
       io.emit('acceleration', 'New Stroke')
       strokes.unshift(time);
     } else {
-      io.emit('acceleration', ' ')
+      io.emit('acceleration', 'DECELERATING')
     }
     lastWasAccelerating = accelerating
     io.emit('stroke rate', strokeRate(15))
@@ -253,7 +254,14 @@ var currentlyExercising = function(){
 
 // # the wheel
 var wheelRadius = 0.34 // meters
-var wheelCircumference = 2 * Math.PI * wheelRadius    
+var wheelCircumference = 2 * Math.PI * wheelRadius
+// As per https://github.com/stevescot/OpenRowingCode/blob/master/ArduniorowComputer/mainEngine.ino#L91
+// The figure used for c is somewhat arbitrary - selected to indicate a 'realistic' boat speed for a given output power.
+// c/p = (v)^3 where p = power in watts, v = velocity in m/s  so v = (c/p)^1/3 v= (2.8/p)^1/3
+// Concept used to quote a figure c=2.8, which, for a 2:00 per 500m split (equivalent to u=500/120=4.17m/s) gives 203 Watts. 
+c = 2.8;
+k = 0.000135;
+var mPerClick = Math.pow((k/c),(0.33333333333333333)) *2* Math.PI;
 
 var currentRpm = function(sensitivity=60){
   date = new Date();
@@ -269,18 +277,27 @@ var currentDistance = function(){
   } else {
     relevantCycles = cycles
   }
-  return Math.round((wheelCircumference * relevantCycles.length));
+
+  return Math.round((mPerClick * relevantCycles.length));
+  // Math.round((wheelCircumference * relevantCycles.length));
 }
 
-var fiveHundredSplit = function(){
-  rpms_per_fhun = Math.round(500.0 / wheelCircumference)
+var fiveHundredSplit = function(sensitivity=500.0){
+  rpms_per_fhun = Math.round(sensitivity / mPerClick)
+  multiplier = 500.0/sensitivity
+  // rpms_per_fhun = Math.round(500.0 / wheelCircumference)
   fhmago = cycles[rpms_per_fhun]
   if (fhmago == undefined) {
-    return
+    clockValue = 0
   } else {
-    date = new Date();
-    currentTime = date.getTime() / 1000.0;
-    return (fhmago - currentTime)/60 // minutes per 500m
+    clockValue = Math.round((cycles[0] - fhmago)*multiplier)
+  }
+  if (clockValue <= 60) {
+    return clockValue;
+  } else {
+    minutes = Math.round(clockValue / 60)
+    seconds = clockValue % 60
+    return (minutes + ':' + pad(seconds, 2))
   }
 }
 

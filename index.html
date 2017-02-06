@@ -17,7 +17,7 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col-xs-12">
-          <span id="acceleration">&nbsp;</span>
+          <span id="rpm"></span><span id="acceleration">&nbsp;</span>
         </div>
       </div>
       <div class="row">
@@ -56,7 +56,7 @@
           <h1><span class='rowingData' id="calories">0</span><br/><small>Calories</small></h1>
         </div>
         <div class="col-xs-6">
-          <h1><span class='rowingData' id="rpm">0</span><br/><small>RPM</small></h1>
+          <h1><span class='rowingData' id="fiveHundredSplit">0</span><br/><small>500m split</small></h1>
         </div>
       </div>
       <hr>
@@ -69,11 +69,19 @@
       socket.on('rpm', function(msg){
         $('#rpm').text(msg);
       });
+      socket.on('five hundred split', function(msg){
+        $('#fiveHundredSplit').text(msg);
+      });
       socket.on('distance', function(msg){
         $('#distance').text(msg);
       });
       socket.on('acceleration', function(msg){
-        $('#acceleration').text(msg);
+        if (msg == 'DECELERATING'){
+          $('#acceleration').html('&nbsp;');  
+        } else {
+          $('#acceleration').text(' - '+ msg);  
+        }
+        
       });
       socket.on('stroke rate', function(msg){
         $('#strokeRate').text(msg);
@@ -131,6 +139,18 @@
         socket.emit('save data', true);
         return false;
       });
+      if (navigator.wakeLock != undefined){
+        navigator.wakeLock.request("display").then(
+          function successFunction() {
+            // success
+            console.log('Keeping Display Awake');
+          },
+          function errorFunction() {
+            // error
+        });
+      }
+      //release() is used to release the lock.
+      // navigator.wakeLock.release("display");
     </script>
   </body>
 </html>
