@@ -16,6 +16,11 @@
   <body>
     <div class="container-fluid">
       <div class="row">
+        <div class="col-xs-12">
+          <span id="acceleration">&nbsp;</span>
+        </div>
+      </div>
+      <div class="row">
         <div class="col-xs-6">
           <form id='stopWatchForm'>
             <button class="btn btn-lg btn-success"><span id="stopWatchButton">Start</span></button>
@@ -51,18 +56,10 @@
           <h1><span class='rowingData' id="calories">0</span><br/><small>Calories</small></h1>
         </div>
         <div class="col-xs-6">
-          <!-- <h1><span class='rowingData' id="calories">0</span><br/><small>Calories</small></h1> -->
+          <h1><span class='rowingData' id="rpm">0</span><br/><small>RPM</small></h1>
         </div>
       </div>
       <hr>
-      <div class="row">
-        <div class="col-xs-6">
-          <h1><span class='rowingData' id="rpm">0</span><br/><small>RPM</small></h1>
-        </div>
-        <div class="col-xs-6">
-          <h1><span class='rowingData' id="acceleration">0</span><br/><small>Stroke</small></h1>
-        </div>
-      </div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/jquery.min.js"></script>

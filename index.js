@@ -45,18 +45,18 @@ var lastCycleTime;
 var lastCycleTimeDiff;
 var lastWasAccelerating;
 var strokes;
-var stopWatchOn;
+var stopWatchState;
 var startTime;
 var timeElapsed;
 var resetCalcValues = function(){
   heartrate = [];
   cycles = [];
-  lastCycleTime;
+  lastCycleTime = undefined;
   lastCycleTimeDiff = 0;
   lastWasAccelerating = false;
   strokes = [];
-  stopWatchOn = false;
-  startTime;
+  stopWatchState = 'NOT_STARTED';
+  startTime = undefined;
   timeElapsed = 0;
 }
 resetCalcValues();
@@ -166,23 +166,24 @@ BleHR.list().on('data', function (device) {
 });
 
 var hallGpio = 17;
-var ledGpio = 18;
 var Gpio = require('pigpio').Gpio,
 hall = new Gpio(hallGpio, {
   mode: Gpio.INPUT,
   edge: Gpio.EITHER_EDGE,
   alert: true
-}),
-led = new Gpio(ledGpio, {mode: Gpio.OUTPUT})
+})
 
 hall.on('alert', function (level) {
   if (level == 1) {
     date = new Date();
     time = date.getTime()/1000.0
-    cycles.unshift(time);
+    if (stopWatchState == 'ON' || stopWatchState == 'NOT_STARTED'){
+      // Record the cycle if you haven't started or if you're working out.
+      cycles.unshift(time);
+    }
     crpm = currentRpm(15)
     io.emit('rpm', crpm);
-    io.emit('distance', currentDistance(cycles));
+    io.emit('distance', currentDistance());
     if (lastCycleTime == undefined) {
       lastCycleTime = time;
       accelerating = true
@@ -196,15 +197,10 @@ hall.on('alert', function (level) {
       io.emit('acceleration', 'New Stroke')
       strokes.unshift(time);
     } else {
-      io.emit('acceleration', '---')
+      io.emit('acceleration', ' ')
     }
     lastWasAccelerating = accelerating
     io.emit('stroke rate', strokeRate(15))
-    if (crpm > 50) {
-      led.digitalWrite(0);
-    } else {
-      led.digitalWrite(1);
-    }
   }
 });
 
@@ -213,6 +209,8 @@ app.get('/', function(req, res){
     res.cookie('runkeeperAccessToken' , runkeeperAccessToken);
   } else if (req.cookies.runkeeperAccessToken){
     runkeeperAccessToken = req.cookies.runkeeperAccessToken;
+  } else {
+    return res.redirect("/auth/runkeeper");
   }
   res.sendfile('index.html');
 });
@@ -244,6 +242,15 @@ http.listen(3000, function(){
   console.log('listening on *:3000');
 });
 
+
+var currentlyExercising = function(){
+  if ((stopWatchState == 'ON') || (stopWatchState == 'PAUSED')){
+    return true;
+  } else {
+    return false;
+  }
+}
+
 // # the wheel
 var wheelRadius = 0.34 // meters
 var wheelCircumference = 2 * Math.PI * wheelRadius    
@@ -256,8 +263,13 @@ var currentRpm = function(sensitivity=60){
   return relevant.length * (60/sensitivity)
 }
 
-var currentDistance = function(arry){
-  return Math.round((wheelCircumference * arry.length));
+var currentDistance = function(){
+  if (currentlyExercising()) {
+    relevantCycles = cycles.filter(function (entry) { return entry >= startTime/1000.0 });
+  } else {
+    relevantCycles = cycles
+  }
+  return Math.round((wheelCircumference * relevantCycles.length));
 }
 
 var fiveHundredSplit = function(){
@@ -281,13 +293,15 @@ var strokeRate = function(sensitivity=60){
 }
 
 var startStopwatch = function(){
-  if ((stopWatchOn == undefined) || (stopWatchOn == false)){
-    date = new Date();
-    startTime = date.getTime()
-    stopWatchOn = true
+  if ((stopWatchState == 'NOT_STARTED') || (stopWatchState == 'PAUSED')){
+    if (stopWatchState == 'NOT_STARTED'){
+      date = new Date();
+      startTime = date.getTime()
+    }
+    stopWatchState = 'ON'
     io.emit('stopwatch button value', 'Stop');
     var theStopWatch = setInterval(function(){
-      if (stopWatchOn) {
+      if (stopWatchState == 'ON') {
         date = new Date();
         currentTime = date.getTime()/1000.0
         timeElapsed = Math.round(currentTime - (startTime/1000))
@@ -309,7 +323,7 @@ var startStopwatch = function(){
 }
 
 var pauseStopwatch = function(){
-  stopWatchOn = false
+  stopWatchState = 'PAUSED'
   io.emit('stopwatch button value', 'Clear Data');
 }
 
@@ -361,7 +375,7 @@ function formatForRunkeeper(){
     "utc_offset": '-28800',
     "duration": timeElapsed,
     "total_calories": totalCalories(),
-    "total_distance": currentDistance(cycles),
+    "total_distance": currentDistance(),
     "source": 'innorow',
     "entry_mode": 'API',
     "tracking_mode": 'indoor',
