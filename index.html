@@ -90,20 +90,16 @@
         $('#timeElapsed').text(msg);
         $('#stopWatchButton').text('Stop');
       });
-      socket.on('heart rate', function(msg){
-        $('#heartRate').text(msg);
-      });
-      socket.on('heart rate label', function(msg){
-        $('#heartRateLabel').text(msg);
-      });
-      socket.on('heart rate zone', function(msg){
-        if (msg == 'WARMUP') {
+      socket.on('heart rate payload', function(msg){
+        $('#heartRateLabel').text(msg.label);
+        $('#heartRate').text(msg.hr);
+        if ((msg.heatrate_zone == 'WARMUP') || (msg.heatrate_zone == undefined)) {
           bgColor = 'white'
-        } else if (msg == 'FAT_BURNING') {
+        } else if (msg.heatrate_zone == 'FAT_BURNING') {
           bgColor = '#5cb85c'
-        } else if (msg == 'THRESHOLD') {
+        } else if (msg.heatrate_zone == 'THRESHOLD') {
           bgColor = '#f0ad4e'
-        } else if (msg == 'ANAEROBIC') {
+        } else if (msg.heatrate_zone == 'ANAEROBIC') {
           bgColor = '#d9534f'
         } else {
           bgColor = 'purple'

@@ -62,24 +62,28 @@ var resetCalcValues = function(){
 resetCalcValues();
 
 var updateHr = function(hr){
+  hrPayload = {}
   date = new Date();
   time = date.getTime()
   heartrate.unshift([parseInt(hr), time]);
-  io.emit('heart rate label', 'HR');
-  io.emit('heart rate', hr);
   heatrateZone = fatBurningZone(parseInt(hr));
-  io.emit('heart rate zone', heatrateZone);
+  hrPayload.label = 'HR';
+  hrPayload.hr = hr;
+  hrPayload.heatrate_zone = heatrateZone;
   if (heartrate.length % 10 == 0){
     lastTen = heartrate.slice(0,9)
     var sum = 0;
     for( var i = 0; i < lastTen.length; i++ ){
         sum += parseInt( lastTen[i][0], 10 ); //don't forget to add the base
     }
-    var avg = Math.round(sum/lastTen.length);
-    io.emit('heart rate label', 'Avg HR');
-    io.emit('heart rate', avg);
+    avg = Math.round(sum/lastTen.length);
+    heatrateZone = fatBurningZone(parseInt(hr));
+    hrPayload.label = 'Avg HR';
+    hrPayload.hr = avg;
+    hrPayload.heatrate_zone = fatBurningZone(parseInt(avg));
     io.emit('calories', totalCalories());
   }
+  io.emit('heart rate payload', hrPayload);
 }
 
 var avgHeartRate = function(){
