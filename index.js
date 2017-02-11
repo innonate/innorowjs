@@ -9,6 +9,7 @@ var fs = require('fs');
 var util = require('util')
 var dateFormat = require('dateformat');
 var BleHR = require('heartrate');
+var Gpio = require('pigpio').Gpio;
 var passport = require('passport');
 var RunKeeperStrategy = require('passport-runkeeper').Strategy;
 
@@ -170,24 +171,24 @@ BleHR.list().on('data', function (device) {
 });
 
 var hallGpio = 17;
-var Gpio = require('pigpio').Gpio,
 hall = new Gpio(hallGpio, {
   mode: Gpio.INPUT,
-  edge: Gpio.EITHER_EDGE,
+  edge: Gpio.RISING_EDGE,
   alert: true
 })
 
 hall.on('alert', function (level) {
   if (level == 1) {
+    cyclePayload = {};
     date = new Date();
     time = date.getTime()/1000.0
     if (stopWatchState == 'ON' || stopWatchState == 'NOT_STARTED'){
       // Record the cycle if you haven't started or if you're working out.
       cycles.unshift(time);
       crpm = currentRpm(15)
-      io.emit('rpm', crpm);
-      io.emit('distance', currentDistance());
-      io.emit('five hundred split', fiveHundredSplit(10));
+      cyclePayload.rpm = crpm;
+      cyclePayload.distance = currentDistance();
+      cyclePayload.split = fiveHundredSplit(10);
     }
     if (lastCycleTime == undefined) {
       lastCycleTime = time;
@@ -199,13 +200,14 @@ hall.on('alert', function (level) {
     }
     acceleration = accelerating ? 'Accelerating' : 'Decelerating'
     if (accelerating && (accelerating != lastWasAccelerating)) {
-      io.emit('acceleration', 'New Stroke')
+      cyclePayload.acceleration = 'New Stroke';
       strokes.unshift(time);
     } else {
-      io.emit('acceleration', 'DECELERATING')
+      cyclePayload.acceleration = 'DECELERATING';
     }
     lastWasAccelerating = accelerating
-    io.emit('stroke rate', strokeRate(15))
+    cyclePayload.stroke_rate = strokeRate(15);
+    io.emit('cycle', cyclePayload);
   }
 });
 

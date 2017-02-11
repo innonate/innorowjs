@@ -66,25 +66,16 @@
     <script src="/js/bootstrap.min.js"></script>
     <script>
       var socket = io();
-      socket.on('rpm', function(msg){
-        $('#rpm').text(msg);
-      });
-      socket.on('five hundred split', function(msg){
-        $('#fiveHundredSplit').text(msg);
-      });
-      socket.on('distance', function(msg){
-        $('#distance').text(msg);
-      });
-      socket.on('acceleration', function(msg){
-        if (msg == 'DECELERATING'){
+      socket.on('cycle', function(msg){
+        $('#rpm').text(msg.rpm);
+        $('#fiveHundredSplit').text(msg.split);
+        $('#distance').text(msg.distance);
+        if (msg.acceleration == 'DECELERATING'){
           $('#acceleration').html('&nbsp;');  
         } else {
-          $('#acceleration').text(' - '+ msg);  
+          $('#acceleration').text(' - '+ msg.acceleration);  
         }
-        
-      });
-      socket.on('stroke rate', function(msg){
-        $('#strokeRate').text(msg);
+        $('#strokeRate').text(msg.stroke_rate);
       });
       socket.on('stopwatch time', function(msg){
         $('#timeElapsed').text(msg);
