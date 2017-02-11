@@ -261,13 +261,19 @@ var currentlyExercising = function(){
 // # the wheel
 var wheelRadius = 0.34 // meters
 var wheelCircumference = 2 * Math.PI * wheelRadius
+
 // As per https://github.com/stevescot/OpenRowingCode/blob/master/ArduniorowComputer/mainEngine.ino#L91
 // The figure used for c is somewhat arbitrary - selected to indicate a 'realistic' boat speed for a given output power.
 // c/p = (v)^3 where p = power in watts, v = velocity in m/s  so v = (c/p)^1/3 v= (2.8/p)^1/3
 // Concept used to quote a figure c=2.8, which, for a 2:00 per 500m split (equivalent to u=500/120=4.17m/s) gives 203 Watts. 
 c = 2.8;
 k = 0.000135;
-var mPerClick = Math.pow((k/c),(0.33333333333333333)) *2* Math.PI;
+var mPerClickFancy = Math.pow((k/c),(0.33333333333333333)) * 2 * Math.PI;
+
+// pick your poison
+// neither of the above seem to be correct, so i'm trying to target slightly above 2:00/500m split at my
+// normal pace until we can make this more scientific
+var mPerClick = 0.8;
 
 var currentRpm = function(sensitivity=60){
   date = new Date();
@@ -285,7 +291,6 @@ var currentDistance = function(){
   }
 
   return Math.round((mPerClick * relevantCycles.length));
-  // Math.round((wheelCircumference * relevantCycles.length));
 }
 
 var fiveHundredSplit = function(sensitivity=500.0){
