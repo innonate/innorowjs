@@ -19,6 +19,8 @@ app.use(cookieParser());
 // prepare server
 app.use('/js', express.static(__dirname + '/node_modules/bootstrap/dist/js')); // redirect bootstrap JS
 app.use('/js', express.static(__dirname + '/node_modules/jquery/dist')); // redirect JS jQuery
+app.use('/js', express.static(__dirname + '/node_modules/react/dist')); // redirect react JS
+app.use('/js', express.static(__dirname + '/node_modules/react-dom/dist')); // redirect react-dom JS
 app.use('/css', express.static(__dirname + '/node_modules/bootstrap/dist/css')); // redirect CSS bootstrap
 // serve static files
 app.use(express.static(__dirname + '/public'));
