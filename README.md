@@ -21,6 +21,14 @@ innorow uses a Hall Effect Sensor, Wahoo HR Monitor, Raspberry Pi, Node JS, and 
 ## Running innorowjs
 After you've installed all the modules (`npm install`) and you can run innorow using `sudo -E node index.js`. Note: You must use `sudo` to have access to the Pi's GPIO and you must use `-E` so you can use your Runkeeper environment variables.
 
+## Run innorow automatically on Pi startup
+To run innorow automatically on your Pi's startup (so you can simply plug the Pi in to get started) then follow these directions:
+- Install `chkconfig` via `sudo apt-get install chkconfig`
+- Copy the file in `/startup_scripts/innorow` to `/etc/init.d/` and then `sudo chmod 755` the file
+- Create a new file here `/etc/default/innorow` and add your Runkeeper client ID and client secret `RUNKEEPER_CLIENT_ID=<your id>
+RUNKEEPER_CLIENT_SECRET=<your secret>`
+- Run `sudo chkconfig --add innorow` to turn your service name into a startup script
+
 ## License
 Copyright (c) 2017 Nate Westheimer
 
