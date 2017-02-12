@@ -39,9 +39,9 @@ passport.use(new RunKeeperStrategy({
 ));
 
 // Setup for Health Data
-var myAge = 33;
-var myWeight = 90; // in kg
-var myRestingHr = 58; // bpm
+const myAge = 33;
+const myWeight = 90; // in kg
+const myRestingHr = 58; // bpm
 
 // Setup for Calculations
 var heartrate;
@@ -262,16 +262,16 @@ var currentlyExercising = function(){
 }
 
 // # the wheel
-var wheelRadius = 0.34 // meters
-var wheelCircumference = 2 * Math.PI * wheelRadius
+const wheelRadius = 0.34 // meters
+const wheelCircumference = 2 * Math.PI * wheelRadius
 
 // As per https://github.com/stevescot/OpenRowingCode/blob/master/ArduniorowComputer/mainEngine.ino#L91
 // The figure used for c is somewhat arbitrary - selected to indicate a 'realistic' boat speed for a given output power.
 // c/p = (v)^3 where p = power in watts, v = velocity in m/s  so v = (c/p)^1/3 v= (2.8/p)^1/3
 // Concept used to quote a figure c=2.8, which, for a 2:00 per 500m split (equivalent to u=500/120=4.17m/s) gives 203 Watts. 
-c = 2.8;
-k = 0.000135;
-var mPerClickFancy = Math.pow((k/c),(0.33333333333333333)) * 2 * Math.PI;
+const c = 2.8;
+const k = 0.000135;
+const mPerClickFancy = Math.pow((k/c),(0.33333333333333333)) * 2 * Math.PI;
 
 // pick your poison
 // neither of the above seem to be correct, so i'm trying to target slightly above 2:00/500m split at my
