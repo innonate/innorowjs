@@ -193,22 +193,7 @@ hall.on('alert', function (level) {
       cyclePayload.distance = currentDistance();
       cyclePayload.split = fiveHundredSplit(10);
     }
-    if (lastCycleTime == undefined) {
-      lastCycleTime = time;
-      accelerating = true
-    } else {
-      accelerating = ((time - lastCycleTime) > lastCycleTimeDiff) ? true : false
-      lastCycleTimeDiff = time - lastCycleTime;
-      lastCycleTime = time;
-    }
-    acceleration = accelerating ? 'Accelerating' : 'Decelerating'
-    if (accelerating && (accelerating != lastWasAccelerating)) {
-      cyclePayload.acceleration = 'New Stroke';
-      strokes.unshift(time);
-    } else {
-      cyclePayload.acceleration = 'DECELERATING';
-    }
-    lastWasAccelerating = accelerating
+    cyclePayload.acceleration = detectStroke(time);
     cyclePayload.stroke_rate = strokeRate(15);
     io.emit('cycle', cyclePayload);
   }
@@ -313,6 +298,33 @@ var fiveHundredSplit = function(sensitivity=500.0){
     seconds = clockValue % 60
     return (minutes + ':' + pad(seconds, 2))
   }
+}
+
+var detectStroke = function(time){
+  chunkSize   = 10;
+  recentChunk = 0;
+  previoChunk = 0;
+  for( var i = 0; i < (chunkSize*2); i++ ){
+    diff = (cycles[i] - cycles[i+1]);
+    if (isNaN(diff)){
+      // do nothing
+    } else {
+      if (i>=chunkSize){
+        previoChunk += diff;
+      } else {
+        recentChunk += diff;
+      }
+    }
+  }
+  currentlyAccelerating = (recentChunk < previoChunk) ? true : false
+  if (currentlyAccelerating && !lastWasAccelerating){
+    strokes.unshift(time);
+    result = true;
+  } else {
+    result = false;
+  }
+  lastWasAccelerating = currentlyAccelerating;
+  return result;
 }
 
 var strokeRate = function(sensitivity=60){

@@ -72,10 +72,10 @@
         $('#rpm').text(msg.rpm);
         $('#fiveHundredSplit').text(msg.split);
         $('#distance').text(msg.distance);
-        if (msg.acceleration == 'DECELERATING'){
-          $('#acceleration').html('&nbsp;');  
+        if (msg.acceleration){
+          $('#acceleration').text(' - '+ 'New Stroke');  
         } else {
-          $('#acceleration').text(' - '+ msg.acceleration);  
+          $('#acceleration').html('&nbsp;');
         }
         $('#strokeRate').text(msg.stroke_rate);
       });
