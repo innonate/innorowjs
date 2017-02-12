@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <style>
-      .label {
-        font-size: 50px
-      }
       .rowingData {
         font-size: 100px
       }
@@ -64,7 +61,9 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/jquery.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
+    <script src="/nosleep.min.js"></script>
     <script>
+      var noSleep = new NoSleep();
       var socket = io();
       socket.on('cycle', function(msg){
         $('#rpm').text(msg.rpm);
@@ -81,21 +80,16 @@
         $('#timeElapsed').text(msg);
         $('#stopWatchButton').text('Stop');
       });
+      var fatBurningColors = {
+        'WARMUP': 'white',
+        'FAT_BURNING': '#5cb85c',
+        'THRESHOLD': '#f0ad4e',
+        'ANAEROBIC': '#d9534f'
+      }
       socket.on('heart rate payload', function(msg){
         $('#heartRateLabel').text(msg.label);
         $('#heartRate').text(msg.hr);
-        if ((msg.heatrate_zone == 'WARMUP') || (msg.heatrate_zone == undefined)) {
-          bgColor = 'white'
-        } else if (msg.heatrate_zone == 'FAT_BURNING') {
-          bgColor = '#5cb85c'
-        } else if (msg.heatrate_zone == 'THRESHOLD') {
-          bgColor = '#f0ad4e'
-        } else if (msg.heatrate_zone == 'ANAEROBIC') {
-          bgColor = '#d9534f'
-        } else {
-          bgColor = 'purple'
-        }
-        $('#heartRateZone').css("background-color", bgColor);
+        $('#heartRateZone').css("background-color", (fatBurningColors[msg.heatrate_zone]||'white'));
       });
       socket.on('calories', function(msg){
         $('#calories').text(msg);
@@ -120,24 +114,13 @@
           sendValue = 'PAUSE';
         }
         socket.emit('start timer', sendValue);
+          noSleep.enable();
           return false;
       });
       $('#saveDataForm').submit(function(){
         socket.emit('save data', true);
         return false;
       });
-      if (navigator.wakeLock != undefined){
-        navigator.wakeLock.request("display").then(
-          function successFunction() {
-            // success
-            console.log('Keeping Display Awake');
-          },
-          function errorFunction() {
-            // error
-        });
-      }
-      //release() is used to release the lock.
-      // navigator.wakeLock.release("display");
     </script>
   </body>
 </html>
