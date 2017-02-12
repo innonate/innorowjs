@@ -103,16 +103,22 @@ var avgHeartRate = function(){
   return avg;
 }
 
-var fatBurningZone = function(hr){
-  // http://www.active.com/fitness/articles/how-to-calculate-your-training-heart-rate-zones
-  // warmup is anything lower
-  fatBurningLo = calculateRange(0.5);
-  fatBurningHi = calculateRange(0.75);
-  aerobicLo = calculateRange(0.75);
-  aerobicHi = calculateRange(0.85);
-  thresholdLo = calculateRange(0.85);
-  thresholdHi = calculateRange(0.90);
+var calculateRange = function(hrRange){
+  maxHr = 220 - myAge;
+  hrReserve = maxHr - myRestingHr
+  theRange = (myRestingHr + (hrReserve*hrRange));
+  return theRange;
+}
 
+// http://www.active.com/fitness/articles/how-to-calculate-your-training-heart-rate-zones
+// warmup is anything lower
+var fatBurningLo = calculateRange(0.5);
+var fatBurningHi = calculateRange(0.75);
+var aerobicLo = calculateRange(0.75);
+var aerobicHi = calculateRange(0.85);
+var thresholdLo = calculateRange(0.85);
+var thresholdHi = calculateRange(0.90);
+var fatBurningZone = function(hr){
   // anaerobic is anything above
   if (hr < fatBurningLo){
     return 'WARMUP';
@@ -125,13 +131,6 @@ var fatBurningZone = function(hr){
   } else {
     return 'ANAEROBIC'
   }
-}
-
-var calculateRange = function(hrRange){
-  maxHr = 220 - myAge;
-  hrReserve = maxHr - myRestingHr
-  theRange = (myRestingHr + (hrReserve*hrRange));
-  return theRange;
 }
 
 var totalCalories = function(){

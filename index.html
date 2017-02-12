@@ -83,13 +83,14 @@
       var fatBurningColors = {
         'WARMUP': 'white',
         'FAT_BURNING': '#5cb85c',
-        'THRESHOLD': '#f0ad4e',
+        'AEROBIC': '#f0ad4e',
+        'THRESHOLD': '#d9534f',
         'ANAEROBIC': '#d9534f'
       }
       socket.on('heart rate payload', function(msg){
         $('#heartRateLabel').text(msg.label);
         $('#heartRate').text(msg.hr);
-        $('#heartRateZone').css("background-color", (fatBurningColors[msg.heatrate_zone]||'white'));
+        $('#heartRateZone').css("background-color", (fatBurningColors[msg.heatrate_zone]||'purple'));
       });
       socket.on('calories', function(msg){
         $('#calories').text(msg);
