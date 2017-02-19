@@ -8,11 +8,28 @@
       .rowingData {
         font-size: 100px
       }
+      #countdownTimerModal {
+        width: 100%;
+        height: 100%;
+        font-size: 100px;
+        background-color: green;
+        color: white;
+        z-index: 1;
+        overflow: auto;
+        position: fixed;
+        text-align: center
+      }
+      #countdownTimer {
+        top: 50%;
+        margin-top: -100px;
+        margin-left: -50px;
+        position: absolute;
+      }
     </style>
   </head>
   <body>
-    <div id='countdownTimer' style="width: 100%;height: 100%; font-size: 100px; background-color: green; color: white;">
-      
+    <div id="countdownTimerModal">
+      <span id='countdownTimer'></span>
     </div>
     <div class="container-fluid">
       <div class="row">
@@ -70,7 +87,7 @@
     <script src="/nosleep.min.js"></script>
     <script>
       $(document).ready(function(){
-        $('#countdownTimer').hide();
+        $('#countdownTimerModal').hide();
       });
       var noSleep = new NoSleep();
       noSleep.enable();
@@ -128,12 +145,12 @@
           var countdown_timer = 10000 // 10 sec
           var theCountdown = setInterval(function(){
             if (countdown_timer > 0) {
-              $('#countdownTimer').show();
+              $('#countdownTimerModal').show();
               clockValue = (countdown_timer/1000);
               $('#countdownTimer').text(clockValue);
               countdown_timer -= 1000
             } else {
-              $('#countdownTimer').hide();
+              $('#countdownTimerModal').hide();
               clearInterval(theCountdown);
               socket.emit('start timer', sendValue);
             }
