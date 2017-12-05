@@ -10,6 +10,7 @@ passport.use(new RunKeeperStrategy({
   },
   function(accessToken, refreshToken, profile, done) {
     runkeeperAccessToken = accessToken;
+    global.runkeeperAccessToken = runkeeperAccessToken;
     return done(null, null);
   }
 ));
